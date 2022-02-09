@@ -1,3 +1,5 @@
+import datetime
+
 from scrapy import Spider, Request
 from bs4 import BeautifulSoup
 from wildberries.items import WildberriesItem_product, WildberriesItem_urls
@@ -17,6 +19,7 @@ class WbSpider(Spider):
     visited = []
     products = dict()
     urls = dict()
+    tags = []
 
     def check_detected_scraping(self, soup):
         pass
@@ -42,16 +45,16 @@ class WbSpider(Spider):
         self.log('<------------------------------------------------------------------------------------------------')
         product_name = card.find('p', {'class': 'goods-card__description'})
         product_price = card.find('span', {'class': 'goods-card__price-now'})
-        if product_name is None or product_name is None:
+        if product_name is None:
             card_desc = card.find('div', {'class': 'product-card__brand'})
             self.log('CARD DESK IS ' + str(card_desc))
-            if product_name is None:
+            if product_name is None and card_desc is not None:
                 product_name = card_desc.find('div', {'class': 'product-card__brand-name'}).text
-            if product_price is None:
+            if product_price is None and card_desc is not None:
                 product_price = card_desc.find('ins', {'class': 'lower-price'}).text
-            if product_name is None:
+            if product_name is None and card_desc is not None:
                 product_name = card_desc.find('span', {'class': 'goods-name'}).text
-            if product_price is None:
+            if product_price is None and card_desc is not None:
                 product_price = card_desc.find('span', {'class': 'price'}).text
 
         self.log('------------------------------------------------------------------------------------------------')
@@ -73,7 +76,7 @@ class WbSpider(Spider):
                 connection = sql.connect('wildberries.db')
                 with connection:
                     cursor = connection.cursor()
-                    cursor.execute('INSERT INTO products values (?,?)', tuple(product))
+                    cursor.execute('INSERT INTO products values (?,?,?,?)', tuple([*product, ' , '.join(self.tags), datetime.datetime.now()]))
                     connection.commit()
             except Exception as e:
                 self.log('НЕ УДАЛОСЬ ЗАПИСАТЬ В БАЗУ ДАННЫХ! ' + str(e))
@@ -83,12 +86,13 @@ class WbSpider(Spider):
                 connection = sql.connect('wildberries.db')
                 with connection:
                     cursor = connection.cursor()
-                    cursor.execute('INSERT INTO urls values (?,?,?)', tuple([url[0], url[1][0], url[1][1]]))
+                    cursor.execute('INSERT INTO urls values (?,?,?,?)', tuple([url[0], url[1][0], url[1][1], datetime.datetime.now()]))
                     connection.commit()
             except Exception as e:
                 self.log('НЕ УДАЛОСЬ ЗАПИСАТЬ В БАЗУ ДАННЫХ! ' + str(e))
         self.products = dict()
         self.urls = dict()
+        self.tags = list()
 
     def reopen_browser(self):
         url = self.driver.current_url
@@ -159,8 +163,11 @@ class WbSpider(Spider):
                 else:
                     name = product_name.text.replace('\n', '')
                     price = product_price.text.replace('\u00A0', '')
-                self.products[name.replace(' / ', ' ')] = price.replace('₽', '')
+                self.products[name.replace(' / ', ' ')] = price.replace('₽', '').replace(' ', '')
         self.log('PRODUCTS: ' + str(self.products))
+        if soup.find('li', {'class':'breadcrumbs__item'}) is not None:
+            for tag in soup.findAll('li', {'class':'breadcrumbs__item'}):
+                self.tags.append(tag.text)
         if self.products is None or len(self.products) < 1:
             self.log('------------------------------------------------------------------------------------------------')
             self.log('PRODUCTS IS NULL !')

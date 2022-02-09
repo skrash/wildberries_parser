@@ -42,10 +42,11 @@ class WildberriesPipeline:
             connection = sql.connect('wildberries.db')
             with connection:
                 cursor = connection.cursor()
-                cursor.execute('CREATE TABLE IF NOT EXISTS products (name VARCHAR(50) UNIQUE PRIMARY KEY, price INTEGER)')
+                cursor.execute('CREATE TABLE IF NOT EXISTS products (name VARCHAR(50) UNIQUE PRIMARY KEY, '
+                               'price INTEGER, tags VARCHAR(500), date TIMESTAMP)')
                 connection.commit()
                 cursor.execute('CREATE TABLE IF NOT EXISTS urls (url VARCHAR(50) UNIQUE PRIMARY KEY,'
-                               ' hash VARCHAR(25), is_banned BOOLEAN)')
+                               ' hash VARCHAR(25), is_banned BOOLEAN, date TIMESTAMP)')
                 connection.commit()
         except Exception as e:
             spider.log('НЕ УДАЛОСЬ СОЗДАТЬ БАЗУ ДАННЫХ! ' + e.__str__())
