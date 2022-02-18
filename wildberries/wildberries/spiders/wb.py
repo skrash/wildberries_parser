@@ -108,7 +108,7 @@ class WbSpider(Spider):
         cards = soup.findAll('li', {'class':'goods__item'})
         self.log(str(cards))
         if cards is None or len(cards) < 1:
-            cards = self.check_condition_cards(soup)
+            cards = self.check_addition_pattern_cards(soup)
             if cards is None or len(cards) < 1:
                 self.log('------------------------------------------------------------------------------------------------')
                 self.log('Card pattern is None')
@@ -129,7 +129,7 @@ class WbSpider(Spider):
             if product_price is not None:
                 product_price = card.find('span', {'class': 'goods-card__price'}).text
             if product_name is None or product_price is None:
-                product_name, product_price = self.check_condition_products(soup, card)
+                product_name, product_price = self.check_addition_pattern_products(soup, card)
             self.log(str(product_name) + str(product_price))
             if product_name is None or product_price is None:
                 self.log('Не найден паттерн product или name!')
