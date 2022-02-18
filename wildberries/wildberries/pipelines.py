@@ -1,10 +1,3 @@
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-
-
-# useful for handling different item types with a single interface
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 import sqlite3 as sql
@@ -37,7 +30,7 @@ class WildberriesPipeline:
         spider.options.headless = True
         spider.profile.set_preference("general.useragent.override", spider.user_agent_s.get_random_user_agent())
         spider.driver = webdriver.Firefox(options=spider.options, firefox_profile=spider.profile)
-
+        # ---------------- создаем бд -----------------------------------
         try:
             connection = sql.connect('wildberries.db')
             with connection:
@@ -46,12 +39,13 @@ class WildberriesPipeline:
                                'price INTEGER, tags VARCHAR(500), date TIMESTAMP)')
                 connection.commit()
                 cursor.execute('CREATE TABLE IF NOT EXISTS urls (url VARCHAR(50) UNIQUE PRIMARY KEY,'
-                               ' hash VARCHAR(25), is_banned BOOLEAN, date TIMESTAMP)')
+                               ' hash VARCHAR(25), success BOOLEAN, date TIMESTAMP)')
                 connection.commit()
         except Exception as e:
             spider.log('НЕ УДАЛОСЬ СОЗДАТЬ БАЗУ ДАННЫХ! ' + e.__str__())
 
     def close_spider(self, spider):
+        # после окончания закрываем selenium
         spider.driver.quit()
 
 
